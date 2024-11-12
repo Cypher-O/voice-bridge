@@ -1,16 +1,20 @@
+// src/controllers/speechToTextController.ts
 import { Request, Response } from 'express';
-import { convertSpeechToText } from '../services/speechToTextService';
+import { transcribeAudio } from '../services/speechToTextService';
 
-export const speechToText = async (req: Request, res: Response) => {
-  try {
-    const audioFile = req.file;
-    if (!audioFile) {
-      return res.status(400).json({ error: 'Audio file is required.' });
+interface MulterRequest extends Request {
+    file?: Express.Multer.File
+}
+
+export const speechToText = async (req: MulterRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ error: 'No audio file provided' });
+            return;
+        }
+        const text = await transcribeAudio(req.file);
+        res.json({ text });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to convert speech to text' });
     }
-
-    const transcript = await convertSpeechToText(audioFile.path);
-    res.json({ transcript });
-  } catch (err) {
-    res.status(500).json({ error: 'Error processing audio.' });
-  }
 };
