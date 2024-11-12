@@ -1,17 +1,14 @@
+// src/controllers/textToSpeechController.ts
 import { Request, Response } from 'express';
 import { convertTextToSpeech } from '../services/textToSpeechService';
 
-export const textToSpeech = async (req: Request, res: Response) => {
-  try {
-    const { text } = req.body;
-    if (!text) {
-      return res.status(400).json({ error: 'Text is required.' });
+export const textToSpeech = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { text } = req.body;
+        const audioStream = await convertTextToSpeech(text);
+        res.set('Content-Type', 'audio/mpeg');
+        audioStream.pipe(res);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to convert text to speech' });
     }
-
-    const audioStream = await convertTextToSpeech(text);
-    res.setHeader('Content-Type', 'audio/mp3');
-    audioStream.pipe(res);
-  } catch (err) {
-    res.status(500).json({ error: 'Error generating speech.' });
-  }
 };
