@@ -1,15 +1,22 @@
 // src/controllers/documentReaderController.ts
 import { Request, Response } from 'express';
 import { readPdf, readDocx } from '../services/documentReaderService';
+import { ApiResponseHandler } from '../utils/api_response';
 
 interface MulterRequest extends Request {
     file?: Express.Multer.File
 }
 
+interface DocumentResponse {
+    text: string;
+    fileName: string;
+    fileType: string;
+}
+
 export const readDocument = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
         if (!req.file) {
-            res.status(400).json({ error: 'No file provided' });
+            res.status(400).json(ApiResponseHandler.error('No file provided', 400));
             return;
         }
         
@@ -21,12 +28,18 @@ export const readDocument = async (req: MulterRequest, res: Response): Promise<v
         } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             text = await readDocx(req.file);
         } else {
-            res.status(400).json({ error: 'Unsupported file type' });
+            res.status(400).json(ApiResponseHandler.error('Unsupported file type', 400));
             return;
         }
         
-        res.json({ text });
+        const response: DocumentResponse = {
+            text,
+            fileName: req.file.originalname,
+            fileType: req.file.mimetype
+        };
+        
+        res.json(ApiResponseHandler.success(response, 'Document read successfully'));
     } catch (error) {
-        res.status(500).json({ error: 'Failed to read document' });
+        res.status(500).json(ApiResponseHandler.error('Failed to read document', 500));
     }
 };
